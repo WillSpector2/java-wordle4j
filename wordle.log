@@ -1,0 +1,10 @@
+java.io.FileNotFoundException: dictionary.txt (Не удается найти указанный файл)
+	at java.base/java.io.FileInputStream.open0(Native Method)
+	at java.base/java.io.FileInputStream.open(FileInputStream.java:213)
+	at java.base/java.io.FileInputStream.<init>(FileInputStream.java:152)
+	at java.base/java.io.FileReader.<init>(FileReader.java:120)
+	at ru.yandex.practicum.WordleDictionaryLoader.load(WordleDictionaryLoader.java:20)
+	at ru.yandex.practicum.Wordle.main(Wordle.java:18)
+Загружено строк словаря: 67763
+Игра начата. Попыток: 6
+Ход: поляк -> +++++, осталось попыток: 5
