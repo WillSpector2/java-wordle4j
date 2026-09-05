@@ -1,94 +1,146 @@
 package ru.yandex.practicum;
 
-import java.util.*;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
 
 public class WordleGame {
+
     private static final int MAX_ATTEMPTS = 6;
 
     private final WordleDictionary dictionary;
     private final String answer;
-    private final PrintWriterLike log;
     private final Random random;
-    private int attemptsLeft = MAX_ATTEMPTS;
+    private final PrintWriter log;
+
+    private int attemptsLeft;
     private boolean won;
 
-    private final List<String> guesses = new ArrayList<>();
-    private final List<String> hints = new ArrayList<>();
+    private final List<String> guesses;
+    private final List<String> hints;
+    private final Set<String> shownHints;
 
-    public WordleGame(WordleDictionary dictionary, Random random, java.io.PrintWriter log) {
+    public WordleGame(
+            WordleDictionary dictionary,
+            String answer,
+            Random random,
+            PrintWriter log) {
+
         if (dictionary == null || dictionary.size() == 0) {
             throw new IllegalArgumentException("Словарь не может быть пустым");
         }
+
+        if (answer == null || !dictionary.contains(answer)) {
+            throw new IllegalArgumentException(
+                    "Загаданное слово должно находиться в словаре");
+        }
+
+        if (random == null) {
+            throw new IllegalArgumentException("Random не может быть null");
+        }
+
+        if (log == null) {
+            throw new IllegalArgumentException("Лог не может быть null");
+        }
+
         this.dictionary = dictionary;
-        this.random = Objects.requireNonNull(random, "random");
-        this.answer = dictionary.getWords().get(random.nextInt(dictionary.size()));
-        this.log = new PrintWriterLike(log);
-        this.log.println("Игра начата. Попыток: " + attemptsLeft);
+        this.answer = answer;
+        this.random = random;
+        this.log = log;
+
+        this.attemptsLeft = MAX_ATTEMPTS;
+        this.won = false;
+
+        this.guesses = new ArrayList<>();
+        this.hints = new ArrayList<>();
+        this.shownHints = new HashSet<>();
+
+        log.println("Игра начата");
+        log.println("Количество попыток: " + attemptsLeft);
     }
 
-    public String makeMove(String input) throws WordNotFoundInDictionary, InvalidWordException {
+    public String makeMove(String input) {
+
         if (isFinished()) {
             throw new IllegalStateException("Игра уже завершена");
         }
 
-        String guess = WordleDictionary.normalize(input);
+        String guess = input;
 
-        if (!guess.matches("[а-я]{5}")) {
-            throw new InvalidWordException("Нужно ввести слово из пяти русских букв");
+        if (guess == null || !guess.matches("[а-я]{5}")) {
+            throw new InvalidWordException(
+                    "Введите слово из пяти русских букв");
         }
+
         if (!dictionary.contains(guess)) {
-            throw new WordNotFoundInDictionary("Такого слова нет в словаре");
+            throw new WordNotFoundInDictionary(
+                    "Такого слова нет в словаре");
         }
 
         attemptsLeft--;
+
         guesses.add(guess);
 
         String hint = WordleDictionary.check(answer, guess);
+
         hints.add(hint);
 
         if (guess.equals(answer)) {
             won = true;
         }
 
-        log.println("Ход: " + guess + " -> " + hint +
-                ", осталось попыток: " + attemptsLeft);
+        log.println(
+                "Слово: " + guess
+                        + ", результат: " + hint
+                        + ", осталось попыток: " + attemptsLeft
+        );
+
         return hint;
     }
 
     public String getHint() {
-        if (isFinished()) return "";
-        if (guesses.isEmpty()) {
-            return randomCandidate(new HashSet<>());
+
+        if (isFinished()) {
+            return "";
         }
 
-        Set<String> candidates = new LinkedHashSet<>(dictionary.getWords());
+        Set<String> candidates = new HashSet<>(dictionary.getWords());
 
         for (int i = 0; i < guesses.size(); i++) {
-            filterCandidates(candidates, guesses.get(i), hints.get(i));
+            String guess = guesses.get(i);
+            String hint = hints.get(i);
+
+            candidates.removeIf(
+                    candidate ->
+                            !WordleDictionary.check(candidate, guess)
+                                    .equals(hint)
+            );
         }
 
         candidates.removeAll(guesses);
 
-        if (candidates.isEmpty() && !guesses.contains(answer)) {
-            candidates.add(answer);
+        candidates.removeAll(shownHints);
+
+        if (candidates.isEmpty()) {
+            throw new IllegalStateException(
+                    "Не осталось новых слов для подсказки"
+            );
         }
 
-        return randomCandidate(candidates);
-    }
+        List<String> candidateList = new ArrayList<>(candidates);
 
-    private void filterCandidates(Set<String> candidates, String guess, String hint) {
-        candidates.removeIf(candidate -> !matchesFeedback(candidate, guess, hint));
-    }
+        String hint = candidateList.get(
+                random.nextInt(candidateList.size())
+        );
 
-    private boolean matchesFeedback(String candidate, String guess, String expected) {
-        return WordleDictionary.check(candidate, guess).equals(expected);
-    }
+        shownHints.add(hint);
 
-    private String randomCandidate(Set<String> candidates) {
-        if (candidates.isEmpty()) return answer;
+        log.println("Подсказка: " + hint);
 
-        List<String> words = new ArrayList<>(candidates);
-        return words.get(random.nextInt(words.size()));
+        return hint;
     }
 
     public boolean isFinished() {
@@ -108,22 +160,10 @@ public class WordleGame {
     }
 
     public List<String> getGuesses() {
-        return List.copyOf(guesses);
+        return new ArrayList<>(guesses);
     }
 
     public List<String> getHints() {
-        return List.copyOf(hints);
-    }
-
-    private static class PrintWriterLike {
-        private final java.io.PrintWriter writer;
-
-        PrintWriterLike(java.io.PrintWriter writer) {
-            this.writer = writer;
-        }
-
-        void println(String text) {
-            if (writer != null) writer.println(text);
-        }
+        return new ArrayList<>(hints);
     }
 }

@@ -1,26 +1,44 @@
 package ru.yandex.practicum;
 
 import org.junit.jupiter.api.Test;
+
 import java.util.List;
-import static org.junit.jupiter.api.Assertions.*;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class WordleDictionaryTest {
+
     @Test
-    void normalizesWords() {
-        assertEquals("елка", WordleDictionary.normalize(" ЁЛКА "));
+    void containsWordsFromDictionary() {
+        WordleDictionary dictionary = new WordleDictionary(
+                List.of("слово", "герой")
+        );
+
+        assertTrue(dictionary.contains("слово"));
+        assertTrue(dictionary.contains("герой"));
+        assertFalse(dictionary.contains("дом"));
+        assertEquals(2, dictionary.size());
     }
 
     @Test
-    void keepsOnlyFiveRussianLetterWords() {
-        WordleDictionary d = new WordleDictionary(
-                List.of("слово", "дом", "ABC", "елка!", "герой"));
-        assertTrue(d.contains("СЛОВО"));
-        assertTrue(d.contains("герой"));
-        assertEquals(2, d.size());
+    void returnsCopyOfWords() {
+        WordleDictionary dictionary = new WordleDictionary(
+                List.of("слово", "герой")
+        );
+
+        List<String> words = dictionary.getWords();
+        words.clear();
+
+        assertEquals(2, dictionary.size());
     }
 
     @Test
     void checksRepeatedLettersCorrectly() {
-        assertEquals("+^-^-", WordleDictionary.check("герой", "гонец"));
+        assertEquals(
+                "+^-^-",
+                WordleDictionary.check("герой", "гонец")
+        );
     }
 }

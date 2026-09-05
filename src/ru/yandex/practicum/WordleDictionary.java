@@ -1,37 +1,36 @@
 package ru.yandex.practicum;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class WordleDictionary {
+
     private final List<String> words;
     private final Set<String> wordSet;
 
     public WordleDictionary(Collection<String> words) {
-        LinkedHashSet<String> normalized = new LinkedHashSet<>();
-        for (String word : words) {
-            String value = normalize(word);
-            if (value.length() == 5 && value.matches("[а-я]+")) {
-                normalized.add(value);
-            }
+        if (words == null || words.isEmpty()) {
+            throw new EmptyDictionaryException("Словарь пуст");
         }
-        if (normalized.isEmpty()) {
-            throw new EmptyDictionaryException("Словарь пятибуквенных слов пуст");
-        }
-        this.words = List.copyOf(normalized);
-        this.wordSet = Set.copyOf(normalized);
-    }
 
-    public static String normalize(String word) {
-        if (word == null) return "";
-        return word.trim().toLowerCase(Locale.ROOT).replace('ё', 'е');
+        this.words = new ArrayList<>(words);
+
+        if (this.words.isEmpty()) {
+            throw new EmptyDictionaryException("Словарь пуст");
+        }
+
+        this.wordSet = new HashSet<>(this.words);
     }
 
     public boolean contains(String word) {
-        return wordSet.contains(normalize(word));
+        return wordSet.contains(word);
     }
 
     public List<String> getWords() {
-        return words;
+        return new ArrayList<>(words);
     }
 
     public int size() {
@@ -39,28 +38,34 @@ public class WordleDictionary {
     }
 
     public static String check(String answer, String guess) {
-        answer = normalize(answer);
-        guess = normalize(guess);
+        char[] result = new char[5];
+        boolean[] used = new boolean[5];
 
-        int n = answer.length();
-        char[] result = new char[n];
-        Arrays.fill(result, '-');
-        int[] remaining = new int[Character.MAX_VALUE + 1];
+        for (int i = 0; i < 5; i++) {
+            result[i] = '-';
+        }
 
-        for (int i = 0; i < n; i++) {
+        for (int i = 0; i < 5; i++) {
             if (guess.charAt(i) == answer.charAt(i)) {
                 result[i] = '+';
-            } else {
-                remaining[answer.charAt(i)]++;
+                used[i] = true;
             }
         }
 
-        for (int i = 0; i < n; i++) {
-            if (result[i] == '-' && remaining[guess.charAt(i)] > 0) {
-                result[i] = '^';
-                remaining[guess.charAt(i)]--;
+        for (int i = 0; i < 5; i++) {
+            if (result[i] == '+') {
+                continue;
+            }
+
+            for (int j = 0; j < 5; j++) {
+                if (!used[j] && guess.charAt(i) == answer.charAt(j)) {
+                    result[i] = '^';
+                    used[j] = true;
+                    break;
+                }
             }
         }
+
         return new String(result);
     }
 }
